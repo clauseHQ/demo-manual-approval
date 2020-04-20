@@ -36,14 +36,19 @@ app.use((req, res, next) => {
   res.locals.nonce = crypto.randomBytes(16).toString('base64');
   next();
 });
+app.use(helmet.referrerPolicy({ policy: 'same-origin' }));
 app.use(helmet.contentSecurityPolicy({
   directives: {
-    defaultSrc: ["'self'"],
+    defaultSrc: ["'none'"],
     styleSrc: ["'self'", "https://fonts.googleapis.com/"],
     fontSrc: ["'self'", "data:", "https://fonts.gstatic.com/"],
     objectSrc: ["'none'"],
     scriptSrc: ["'self'", (req, res) => `'nonce-${res.locals.nonce}'`,],
-    baseUri: ["'none'"]
+    baseUri: ["'none'"],
+    formAction: ["'none'"],
+    connectSrc: ["'self'"],
+    imgSrc: ["'self'"],
+    manifestSrc: ["'self'"]
   }
 }))
 app.use(logger('dev'));
