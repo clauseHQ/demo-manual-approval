@@ -9,6 +9,8 @@ const path = require('path');
 const { JWK, JWE, JWT } = require('jose');
 const dotenv = require('dotenv');
 const axios = require('axios');
+const crypto = require('crypto');
+
 dotenv.config();
 
 const {
@@ -28,7 +30,22 @@ const sign = object => JWT.sign(object, key, {
 });
 
 const app = express();
+
 app.use(helmet());
+app.use((req, res, next) => {
+  res.locals.nonce = crypto.randomBytes(16).toString('base64');
+  next();
+});
+app.use(helmet.contentSecurityPolicy({
+  directives: {
+    defaultSrc: ["'self'"],
+    styleSrc: ["'self'", "https://fonts.googleapis.com/"],
+    fontSrc: ["'self'", "data:", "https://fonts.gstatic.com/"],
+    objectSrc: ["'none'"],
+    scriptSrc: ["'self'", (req, res) => `'nonce-${res.locals.nonce}'`,],
+    baseUri: ["'none'"]
+  }
+}))
 app.use(logger('dev'));
 app.use(cookieParser());
 
@@ -39,15 +56,25 @@ if (app.get('env') === 'development') {
 // config express-session
 var sess = {
   secret: COOKIE_SECRET,
-  cookie: {},
+  cookie: {
+    name: '__Host-ClauseApprove'
+  },
   resave: false,
   saveUninitialized: true
 };
 
 if (app.get('env') === 'production') {
   app.set('trust proxy', 1); // trust first proxy
-  // sess.cookie.sameSite = true;
+  sess.cookie.sameSite = true;
   sess.cookie.secure = true // serve secure cookies
+
+  // Redirect HTTP to HTTPS
+  app.use((req, res, next) => {
+    if (req.headers['x-forwarded-proto'] !== 'https') {
+      return res.redirect('https://' + req.headers.host + req.url);
+    }
+    return next();
+  });
 }
 
 app.use(session(sess));
