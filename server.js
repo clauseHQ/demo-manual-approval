@@ -60,10 +60,9 @@ if (app.get('env') === 'development') {
 
 // config express-session
 var sess = {
+  name: '__Host-ClauseApprove',
   secret: COOKIE_SECRET,
-  cookie: {
-    name: '__Host-ClauseApprove'
-  },
+  cookie: {},
   resave: false,
   saveUninitialized: true
 };
